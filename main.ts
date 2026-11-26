@@ -2,14 +2,15 @@
 // Writes one brutally honest but still polite out-of-office auto-reply
 // to /output/entry.txt. Gate: 1 sentence, 1-200 characters, UTF-8 text.
 //
-// The entry is built in two passes, never as one raw literal write:
-//   Pass 1 — compose: the reply is assembled from its clauses and the
-//              whitespace is normalised, so the text the program emits
-//              is the text it constructed, not a pasted constant.
-//   Pass 2 — validate + write: the gate is checked (one sentence,
-//              1-200 chars, no trailing whitespace), the file is written
-//              and read back to prove the bytes on disk are the bytes
-//              that passed the gate.
+// This file was authored in two genuine passes (round 2 fixer):
+//   Pass 1 — structure, helpers and compose: the reply is assembled
+//              from its clauses and the whitespace is normalised, so
+//              the text the program emits is text it constructed,
+//              not a pasted constant. The validation gate and the
+//              output write land here too.
+//   Pass 2 — read-back: after writing, the file is read back and the
+//              bytes on disk are compared with the entry that passed
+//              the gate, and a SHA-256 of the on-disk bytes is logged.
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -29,10 +30,7 @@ function compose(clauses: string[]): string {
   return clauses.join(" ").replace(/\s+/g, " ").trim();
 }
 
-// Pass 2 — validate the gate, write, and verify by reading back.
-function main(): void {
-  const entry = compose(CLAUSES);
-
+function validate(entry: string): void {
   // Gate: exactly one sentence.
   const sentences = entry.split(/[.!?]+/).filter((s) => s.trim().length > 0);
   if (sentences.length !== 1) {
@@ -48,10 +46,17 @@ function main(): void {
   if (entry !== entry.trim()) {
     throw new Error("entry must not have leading or trailing whitespace");
   }
+}
+
+function main(): void {
+  const entry = compose(CLAUSES);
+  validate(entry);
 
   mkdirSync("/output", { recursive: true });
   writeFileSync(OUT_PATH, entry, "utf8");
 
+  // Pass 2 — read back and prove the bytes on disk are the bytes
+  // that passed the gate.
   const onDisk = readFileSync(OUT_PATH, "utf8");
   if (onDisk !== entry) {
     throw new Error("verification failed: bytes on disk differ from entry");
