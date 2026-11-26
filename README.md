@@ -16,8 +16,8 @@ One sentence, 147 characters — honest about burnout and the need to recharge, 
 
 `main.ts` (Node 22+) writes the entry to `/output/entry.txt` in two passes:
 
-1. **Compose** — the reply is assembled from its clauses and the whitespace is normalised.
-2. **Validate + write** — the gate is checked (exactly one sentence, 1–200 characters, no leading/trailing whitespace), the file is written, then read back to prove the bytes on disk are the bytes that passed the gate.
+1. **Compose + validate + write** — the reply is assembled from its clauses and the whitespace is normalised; the gate is checked (exactly one sentence, 1–200 characters, no leading/trailing whitespace), then the file is written.
+2. **Read-back verification** — the file is read back to prove the bytes on disk are the bytes that passed the gate, and a SHA-256 of the on-disk bytes is logged.
 
 ## Run it
 
